@@ -1,14 +1,23 @@
 signature FOLD =
 sig
-  type ('a, 'b, 'c, 'd) step = 'a * ('b -> 'c) -> 'd
-  type ('a, 'b, 'c, 'd) t = ('a, 'b, 'c, 'd) step -> 'd
-  type ('a1, 'a2, 'b, 'c, 'd) step0 = ('a1, 'b, 'c, ('a2, 'b, 'c, 'd) t) step
-  type ('a11, 'a12, 'a2, 'b, 'c, 'd) step1 =
-    ('a12, 'b, 'c, 'a11 -> ('a2, 'b, 'c, 'd) t) step
+  (* The fnishing function to be applied at the end of the fold *)
+  type ('x, 'y) fin = 'x -> 'y
 
-  val fold: 'a * ('b -> 'c) -> ('a, 'b, 'c, 'd) t
+  (* Each step in the fold is a function that takes an accululator and the finishing function,
+     producing 'next, a type that is completely left open to be filled in by type inference *)
+  type ('acc, 'x, 'y, 'next) step = 'acc * ('x, 'y) fin -> 'next
+  (* The type of a folder that consumes a single step *)
+  type ('acc, 'x, 'y, 'next) t = ('acc, 'x, 'y, 'next) step -> 'next
+  type ('acc1, 'acc2, 'x, 'y, 'next) step0 =
+    ('acc1, 'x, 'y, ('acc2, 'x, 'y, 'next) t) step
+  type ('acc11, 'acc12, 'acc2, 'x, 'y, 'next) step1 =
+    ('acc12, 'x, 'y, 'acc11 -> ('acc2, 'x, 'y, 'next) t) step
+
+  (* Create a folder from an initial value and a finishing function *)
+  val fold: 'acc * ('x, 'y) fin -> ('acc, 'x, 'y, 'next) t
+  val step0: ('acc1 -> 'acc2) -> ('acc1, 'acc2, 'x, 'y, 'next) step0
+  val step1: ('acc11 * 'acc12 -> 'acc2)
+             -> ('acc11, 'acc12, 'acc2, 'x, 'y, 'next) step1
   val lift0: ('a1, 'a2, 'a2, 'a2, 'a2) step0 -> ('a1, 'a2, 'b, 'c, 'd) step0
-  val post: ('a, 'b, 'c1, 'd) t * ('c1 -> 'c2) -> ('a, 'b, 'c2, 'd) t
-  val step0: ('a1 -> 'a2) -> ('a1, 'a2, 'b, 'c, 'd) step0
-  val step1: ('a11 * 'a12 -> 'a2) -> ('a11, 'a12, 'a2, 'b, 'c, 'd) step1
+  val post: ('acc, 'x, 'y1, 'next) t * ('y1 -> 'y2) -> ('acc, 'x, 'y2, 'next) t
 end
